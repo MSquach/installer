@@ -53,7 +53,7 @@ jobs:
       - name: Clone dmd
         uses: actions/checkout@v4
         with:
-          repository: 'dlang/dmd'
+          repository: 'MSquach/dmd'
           ref: ${{ inputs.release_branch }}
           fetch-depth: 0
           path: 'dmd'
