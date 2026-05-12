@@ -457,13 +457,18 @@ void getCodesignCerts(string tgtDir)
 
 void cloneSources(string gitTag, string dubTag, bool isBranch, bool skipDocs, string tgtDir)
 {
-    auto prefix = "https://github.com/dlang/";
-    auto fmt = "git clone --depth 1 --branch %1$s " ~ prefix ~ "%2$s.git " ~ tgtDir ~ "/%2$s";
+    auto defaultPrefix = "https://github.com/dlang/";
     size_t nfallback;
+
     foreach (proj; allProjects)
     {
         if (skipDocs && proj == "dlang.org")
             continue;
+
+        // dmd 单独走 MSquach 仓库，其它项目走 dlang 仓库
+        auto prefix = (proj == "dmd") ? "https://github.com/MSquach/" : defaultPrefix;
+        auto fmt = "git clone --depth 1 --branch %1$s " ~ prefix ~ "%2$s.git " ~ tgtDir ~ "/%2$s";
+
         // use master as fallback for feature branches
         if (isBranch && !branchExists(prefix ~ proj, gitTag))
         {
@@ -471,10 +476,20 @@ void cloneSources(string gitTag, string dubTag, bool isBranch, bool skipDocs, st
             run(fmt.format("master", proj));
         }
         else
+        {
             run(fmt.format(gitTag, proj));
+        }
     }
+
     enforce(nfallback < allProjects.length, "Branch " ~ gitTag ~ " not found in any dlang repo.");
-    run(fmt.format(isBranch && !branchExists(prefix ~ "dub", dubTag) ? "master" : dubTag, "dub"));
+
+    auto dubPrefix = defaultPrefix;
+    auto dubFmt = "git clone --depth 1 --branch %1$s " ~ dubPrefix ~ "%2$s.git " ~ tgtDir ~ "/%2$s";
+
+    run(dubFmt.format(
+        isBranch && !branchExists(dubPrefix ~ "dub", dubTag) ? "master" : dubTag,
+        "dub"
+    ));
 }
 
 bool branchExists(string gitRepo, string branch)
